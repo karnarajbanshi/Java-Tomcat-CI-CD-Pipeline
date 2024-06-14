@@ -1,0 +1,126 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = 'karnarajbanshi/tomcatsonarimg'
+        DOCKER_NETWORK = 'swarm-net'
+        SERVICE_NAME_QA = 'qa-tomcat'
+        SERVICE_NAME_STAGING = 'staging-tomcat'
+    }
+
+    stages {
+        stage('Build Application') {
+            steps {
+                sh 'mvn -f jenkins/java-tomcat-sample/pom.xml clean package'
+            }
+            post {
+                success {
+                    echo "Archiving the artifact"
+                    archiveArtifacts artifacts: '**/*.war', followSymlinks: false
+                }
+            }
+        }
+
+        stage('UNIT TEST') {
+            steps {
+                sh 'mvn -f jenkins/java-tomcat-sample/pom.xml test'
+            }
+        }
+
+        stage('Checkstyle Analysis') {
+            steps {
+                sh 'mvn -f jenkins/java-tomcat-sample/pom.xml checkstyle:checkstyle'
+            }
+        }
+
+        stage('Sonar Analysis') {
+            steps {
+                script {
+                    dir('jenkins/java-tomcat-sample') {
+                        withSonarQubeEnv(credentialsId: 'MySonarTokenNew') {
+                            sh 'mvn clean package sonar:sonar'
+                        }
+                    }
+                }
+            }
+        }
+
+        
+
+        stage('Create Docker Image') {
+            steps {
+                echo "Building docker image"
+                sh '''
+                original_pwd=$(pwd -P)
+                cd jenkins/java-tomcat-sample
+                docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} .
+                docker push ${DOCKER_IMAGE}:${BUILD_NUMBER} # Push the built image to a repository
+                cd $original_pwd
+                '''
+            }
+        }
+
+        stage('Deploy in QA Instance') {
+            steps {
+                echo "Deploying the tomcat app in QA"
+                sh '''
+                docker pull ${DOCKER_IMAGE}:${BUILD_NUMBER}
+                docker service rm ${SERVICE_NAME_QA} || true
+                docker service update --image ${DOCKER_IMAGE}:${BUILD_NUMBER} ${SERVICE_NAME_QA} || 
+                docker service create --name ${SERVICE_NAME_QA} --network ${DOCKER_NETWORK} -p 8083:8080 --replicas 1 ${DOCKER_IMAGE}:${BUILD_NUMBER}
+                '''
+            }
+        }
+
+        stage('Deploy in Production Instance') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    input message: 'Approve the staging deployment'
+                }
+                echo "Deploying the app in staging"
+                sh '''
+                docker pull ${DOCKER_IMAGE}:${BUILD_NUMBER}
+                docker service rm ${SERVICE_NAME_STAGING} || true
+                docker service update --image ${DOCKER_IMAGE}:${BUILD_NUMBER} ${SERVICE_NAME_STAGING} || 
+                docker service create --name ${SERVICE_NAME_STAGING} --network ${DOCKER_NETWORK} -p 8084:8080 --replicas 1 ${DOCKER_IMAGE}:${BUILD_NUMBER}
+                '''
+            }
+        }
+    }
+
+    post {
+        always {
+            mail to: 'karnaraj05@gmail.com',
+            subject: "Job '${JOB_NAME}' (${BUILD_NUMBER}) is waiting for input",
+            body: "Please go to ${BUILD_URL} and verify the build"
+        }
+        success {
+            mail to: 'karnaraj05@gmail.com',
+            subject: 'BUILD SUCCESS NOTIFICATION',
+            body: """Hi Team,
+
+Build #$BUILD_NUMBER is successful, please go through the URL
+
+$BUILD_URL
+
+and verify the details.
+
+Regards,
+DevOps Team"""
+        }
+        failure {
+            mail to: 'karna05@outlook.com',
+            subject: 'BUILD FAILED NOTIFICATION',
+            body: """Hi Team,
+
+Build #$BUILD_NUMBER is unsuccessful, please go through the URL
+
+$BUILD_URL
+
+and verify the details.
+
+Regards,
+DevOps Team"""
+        }
+    }
+}
