@@ -1,6 +1,6 @@
 # DevOps CI/CD Pipeline for Java Tomcat Application
 
-![DevOps CI/CD Pipeline](https://placehold.it/800x400)
+![DevOps CI/CD Pipeline](https://github.com/karnarajbanshi/Java-Tomcat-CI-CD-Pipeline/blob/main/assets/devops%20project%20architecture.png)
 
 This repository showcases a robust DevOps setup for automating the Continuous Integration and Continuous Deployment (CI/CD) pipeline of a Java Tomcat application. The project utilizes Jenkins, Docker, and various monitoring and code quality tools to streamline the software delivery process.
 
