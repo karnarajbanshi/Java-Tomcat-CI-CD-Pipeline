@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus_data:/etc/prometheus
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=password
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  sonarqube:
+    image: sonarqube:latest
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+
+  nexus:
+    image: sonatype/nexus3:latest
+    ports:
+      - "8081:8081"
+    volumes:
+      - nexus_data:/nexus-data
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  sonarqube_data:
+  nexus_data:
