@@ -57,7 +57,7 @@ Follow these instructions to set up and deploy the CI/CD pipeline environment lo
 Contributions are welcome! Fork the repository and submit a pull request with your enhancements.
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the LICENSE file for details[here](https://github.com/karnarajbanshi/Java-Tomcat-CI-CD-Pipeline/blob/main/LICENSE.md).
 
 ## Acknowledgments
 - **Inspired by the need for scalable and efficient CI/CD pipelines.**
