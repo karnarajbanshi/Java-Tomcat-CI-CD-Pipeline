@@ -72,7 +72,7 @@ pipeline {
             }
         }
 
-        stage('Deploy in Production Instance') {
+        stage('Deploy in Stagging Instance') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     input message: 'Approve the staging deployment'
